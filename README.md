@@ -1,8 +1,8 @@
-## MIP-1-praktiskais darbs
+# MIP-1-praktiskais darbs
 
-## Papildu prasības programmatūrai 
+### Papildu prasības programmatūrai 
 
-# Spēles sākumā cilvēks-spēlētājs norāda spēlē izmantojamas skaitļu virknes garumu, kas var būt diapazonā no 15 līdz 25 skaitļiem. Spēles programmatūra gadījuma ceļā  saģenerē skaitļu virkni atbilstoši uzdotajam garumam, tajā iekļaujot skaitļus no 1 līdz 9. 
+### Spēles sākumā cilvēks-spēlētājs norāda spēlē izmantojamas skaitļu virknes garumu, kas var būt diapazonā no 15 līdz 25 skaitļiem. Spēles programmatūra gadījuma ceļā  saģenerē skaitļu virkni atbilstoši uzdotajam garumam, tajā iekļaujot skaitļus no 1 līdz 9. 
 
 _Spēles apraksts_ 
 
