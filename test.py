@@ -8,15 +8,16 @@ initial_numbers = game.generate_numbers(game.length)
 print("Sākotnējais stāvoklis:", initial_numbers)
 game.game_state = initial_numbers.copy()
 
-# Ģenerē lēmumu koku
-decision_tree = game.generate_decision_tree(game.game_state, game.depth)
-print("\nLēmumu koks:")
-levels = game.split_tree_by_levels(decision_tree)
-for level, nodes in levels.items():
-    print(f"Līmenis {level}:")
-    for node in nodes:
-        print("  Stāvoklis:", node["state"], "Score:", node["score"])
+    # Spēles galvenā cilpa
+while len(game.game_state) > 1:
+    print("\nSpēlētāja gājiens:")
+    game.player_move()
+    if len(game.game_state) == 1:
+        break
+    print("\nDatora gājiens:")
+    game.computer_move()
 
-# Datora gājiens (izmantojot minimax vai, nākotnē, alfa_beta)
-print("\nDatora gājiens (Minimax):")
-game.computer_move()
+print("\nSpēle beigusies!")
+print("Galīgais stāvoklis:", game.game_state)
+print("Player Score:", game.player_score, "Bank Score:", game.bank_score)
+print(game.depth)
