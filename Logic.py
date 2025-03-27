@@ -1,5 +1,5 @@
 import random
-from collections import deque
+from collections import defaultdict, deque
 
 
 class Game():
@@ -9,7 +9,7 @@ class Game():
         self.choose_num = 0
 
         self.isMinMax = True         # Karogs: izmantot minimax algoritmu
-        self.isAlfaBeta = False      # Karogs: izmantot alfa_beta algoritmu (nākotnē)
+        self.isAlfaBeta = False      # Karogs: izmantot alfa_beta algoritmu
         self.is_maximizing = True    # Spēlētājs, kurš sācis spēli, tiek uzskatīts par maksimizējošo
 
         self.bank_score = 0          # Bankas punkti (kad summa == 7)
@@ -25,13 +25,47 @@ class Game():
         self.length = length
         return self.length
 
-    # Izvēlas algoritma dziļumu
-    def choose_depth(self, depth):
-        self.depth = depth
-        return self.depth
+    def choose_first_move(self):
+        """
+        Funkcija, kas ļauj izvēlēties, kurš sāks spēli.
+
+        Ievadi:
+          1 – ja vēlies sākt pats (spēlētājs kļūst par maksimizējošo),
+          2 – ja datora gājiens sāk (dators kļūst par maksimizējošo).
+
+        Funkcija iestata mainīgo self.is_maximizing atbilstoši izvēlei un atgriež izvēlēto vērtību.
+        """
+        valid = False
+        choice = None
+        while not valid:
+            try:
+                user_input = input("Kurš sāk spēli? Ievadi 1 (spēlētājs) vai 2 (dators): ")
+                choice = int(user_input)
+                if choice == 1 or choice == 2:
+                    valid = True
+                else:
+                    print("Lūdzu, ievadi 1 vai 2.")
+            except ValueError:
+                print("Lūdzu, ievadi veselu skaitli (1 vai 2).")
+
+        if choice == 1:
+            # Spēlētājs sāk, tad viņš ir maksimizējošais
+            self.is_maximizing = True
+            print("Spēlētājs sāks spēli.")
+        else:
+            # Dators sāk, tad datoram ir maksimizējošā loma
+            self.is_maximizing = False
+            print("Dators sāks spēli.")
+
+        return choice
 
     # Ģenerē nejaušu skaitļu sarakstu
     def generate_numbers(self, length):
+        """
+        Ģenerē nejaušu skaitļu (no 1 līdz 9) sarakstu ar norādīto garumu (no 15 līdz 25)    .
+        Output piemērs:
+            [3, 7, 1, 9, 4, 5, 2, 8, 6, 1, 3, 7, 4, 2, 9]
+        """
         if not (15 <= length <= 25):
             raise ValueError("Garumam jābūt no 15 līdz 25")
         self.game_state = [random.randint(1, 9) for _ in range(length)]
@@ -63,7 +97,8 @@ class Game():
             pair_sum = x + y
 
             new_score = score.copy()
-            # Piemēro aizstāšanas noteikumus un atjaunina punktu vērtības:
+
+            # Logic rules:
             if pair_sum > 7:
                 current_state.insert(i, 1)
                 new_score["player_score"] += 1
@@ -79,20 +114,26 @@ class Game():
 
         return node
 
+
     def split_tree_by_levels(self, tree):
         """
-        Sadala koku pa līmeņiem, saglabājot pilnu informāciju par katru mezglu.
-        Atgriež vārdnīcu, kur atslēga ir līmeņa numurs, un vērtība ir mezglu saraksts.
+            Sadala koku pa līmeņiem, izmantojot BFS (platuma meklēšanu).
+            Atgriež vārdnīcu, kur atslēga ir līmeņa numurs, un vērtība ir mezglu saraksts.
         """
-        levels = {}
-        def traverse(node, depth):
-            if depth not in levels:
-                levels[depth] = []
+        levels = defaultdict(list)
+        # Iniciējam rindu ar saknes mezglu un līmeni 0
+        queue = deque([(tree, 0)])
+
+        # Kamēr rinda nav tukša, apstrādājam katru mezglu
+        while queue:
+            node, depth = queue.popleft()
             levels[depth].append(node)
+            # Pievienojam visus bērnu mezglus ar palielinātu līmeni
             for child in node.get("children", []):
-                traverse(child, depth + 1)
-        traverse(tree, 0)
-        return levels
+                queue.append((child, depth + 1))
+
+        # Atgriežam vārdnīcu kā parastu
+        return dict(levels)
 
     def terminal_eval(self, score):
         """
@@ -117,77 +158,143 @@ class Game():
     # Minimax algoritma rekurzīvā ieviešana
     def minimax(self, node, depth, is_maximizing):
         """
-        Rekurzīva minimax algoritma ieviešana.
-        Ja stāvoklis ir termināls (atlicis viens skaitlis), atgriež novērtējumu (1, -1 vai 0).
-        Ja dziļuma robeža sasniegta (depth <= 0) vai nav bērnu, atgriežam heuristisko vērtību.
-        """
+            Rekurzīva minimax algoritma ieviešana (bez maiņas starp maximizēšanu un minimizēšanu).
+            Ja spēlētājs, kurš sāk (maksimizējošais), veic gājienus, tad visos rekursīvās izsaukumos tiek
+            izmantota tā pati loma (True), tātad tiek vienmēr maksimizēta vērtība.
+            Ja loma ir minimizējoša, tad vienmēr tiek izmantota False.
+
+            Ja stāvoklis ir termināls (atlicis viens skaitlis), atgriež novērtējumu, izmantojot terminal_eval.
+            Ja dziļuma robeža sasniegta (depth <= 0) vai bērnu nav, atgriež heuristisko vērtību.
+            """
         # Termināls stāvoklis: atlicis viens skaitlis
         if len(node["state"]) == 1:
             return self.terminal_eval(node["score"])
-        # Ja bērnu nav, atgriežam heuristisko vērtību (drošības pārbaude)
-        if not node["children"]:
-            return self.heuristic_eval(node)
-        # Ja dziļuma robeža sasniegta vai kļuvusi negatīva, atgriežam heuristisko vērtību
-        if depth <= 0:
+        if not node["children"] or depth <= 0:
             return self.heuristic_eval(node)
 
         if is_maximizing:
             best_value = float("-inf")
             for child in node["children"]:
-                value = self.minimax(child, depth - 1, False)
+                # Nodarbojamies ar tādu pašu lomu (neatsaucoties uz pretinieku)
+                value = self.minimax(child, depth - 1, True)
                 best_value = max(best_value, value)
             return best_value
         else:
             best_value = float("inf")
             for child in node["children"]:
-                value = self.minimax(child, depth - 1, True)
+                value = self.minimax(child, depth - 1, False)
                 best_value = min(best_value, value)
             return best_value
 
-    # Alfa-beta algoritma ieviešana (nākotnē)
+
+    # Alfa-beta algoritma ieviešana
     def alfa_beta(self, node, depth, alpha, beta, is_maximizing):
-        pass
+        """
+            Alfa-beta algoritma rekurzīva ieviešana.
+            Ja stāvoklis ir termināls (atlicis viens skaitlis), atgriež novērtējumu (1, -1 vai 0).
+            Ja dziļuma robeža sasniegta (depth <= 0) vai bērnu nav, atgriež heuristisko vērtību.
+            Maksimizējošajam spēlētājam tiek meklēta maksimālā vērtība,
+            minimizējošajam – minimālā vērtība, izmantojot alfa-beta apgriezšanas tehnoloģiju.
+            """
+        # Terminālais stāvoklis: atlicis viens skaitlis
+        if len(node["state"]) == 1:
+            return self.terminal_eval(node["score"])
+
+        # Ja bērnu nav, atgriežam heuristisko vērtību (drošības pārbaude)
+        if not node["children"]:
+            return self.heuristic_eval(node)
+
+        # Ja dziļuma robeža sasniegta vai kļuvusi negatīva, atgriežam heuristisko vērtību
+        if depth <= 0:
+            return self.heuristic_eval(node)
+
+        # Maksimizējošā loma: meklējam maksimālo vērtību
+        if is_maximizing:
+            value = float("-inf")
+            for child in node["children"]:
+                # Rekursīvi izsaucam alfa_beta ar minimizējošu nākamo gājienu
+                value = max(value, self.alfa_beta(child, depth - 1, alpha, beta, False))
+                alpha = max(alpha, value)
+                # Ja beta ir mazāks vai vienāds ar alfa, pārtraucam gājienu (cut-off)
+                if beta <= alpha:
+                    break
+            return value
+        else:
+            # Minimējošā loma: meklējam minimālo vērtību
+            value = float("inf")
+            for child in node["children"]:
+                # Rekurzīvi izsaucam alfa_beta ar maksimizējošu nākamo gājienu
+                value = min(value, self.alfa_beta(child, depth - 1, alpha, beta, True))
+                beta = min(beta, value)
+                # Ja beta ir mazāks vai vienāds ar alfa, pārtraucam gājienu (cut-off)
+                if beta <= alpha:
+                    break
+            return value
 
     # Izvēlas labāko gājienu, izmantojot minimax vai alfa-beta algoritmu
-    def choose_move(self, is_max_turn=None):
+    def choose_move(self):
         """
-        Ģenerē lēmumu koku pašreizējam stāvoklim, izmantojot dinamiski noteikto dziļumu,
-        un pēc tam izvēlas labāko gājienu, balstoties uz spēlētāja lomu, kuru norāda is_max_turn.
-        Ja is_max_turn ir True, tiek meklēts gājiens ar maksimālo vērtību;
-        pretējā gadījumā – gājiens ar minimālo vērtību.
-        Pēc labākā gājiena izvēles atjaunina spēles stāvokli:
-          game_state, player_score un bank_score.
-        """
-        # Ja parametrs netiek norādīts, lieto sākotnējo lomu
-        if is_max_turn is None:
-            is_max_turn = self.is_maximizing
+            Ģenerē lēmumu koku pašreizējam stāvoklim, izmantojot dinamiski noteikto dziļumu,
+            un pēc tam izvēlas labāko gājienu, izmantojot izvēlēto algoritmu – minimax vai alfa-beta.
 
-        dynamic_depth = self.get_dynamic_depth()
-        self.tree = self.generate_decision_tree(self.game_state, dynamic_depth)
+            Saskaņā ar spēles noteikumiem:
+              - Ja cilvēks sāk spēli (self.is_maximizing == True), tad cilvēks ir maksimizators,
+                un datoram jāizvēlas gājiens kā minimizētājam.
+              - Ja dators sāk spēli (self.is_maximizing == False), tad dators ir maksimizators.
+
+            Pēc labākā gājiena izvēles atjaunina spēles stāvokli: game_state, player_score un bank_score.
+            """
+        # Atjaunina dziļumu, izmantojot dinamiski noteikto dziļumu
+        current_depth = self.get_dynamic_depth()
+        self.tree = self.generate_decision_tree(self.game_state, current_depth)
 
         best_move = None
         best_child = None
+        best_value = None
 
-        if is_max_turn:
-            best_value = float("-inf")
-            for idx, child in enumerate(self.tree["children"]):
-                # Nākamajā kārtā pretinieks būs minimizējošais
-                move_value = self.minimax(child, self.depth - 1, False)
-                print(f"Gājiens {idx}: Stāvoklis {child['state']}, Score {child['score']}, Vērtība {move_value}")
-                if move_value > best_value:
-                    best_value = move_value
-                    best_move = idx
-                    best_child = child
-        else:
-            best_value = float("inf")
-            for idx, child in enumerate(self.tree["children"]):
-                # Nākamajā kārtā pretinieks būs maksimizējošais
-                move_value = self.minimax(child, self.depth - 1, True)
-                print(f"Gājiens {idx}: Stāvoklis {child['state']}, Score {child['score']}, Vērtība {move_value}")
-                if move_value < best_value:
-                    best_value = move_value
-                    best_move = idx
-                    best_child = child
+        if self.isMinMax:
+            # Ja cilvēks sāk, tad dators spēlē kā minimizētājs.
+            if self.is_maximizing:
+                best_value = float("inf")
+                for idx, child in enumerate(self.tree["children"]):
+                    # Nākamajā kārtā dators spēlē kā minimizētājs (parametr False)
+                    move_value = self.minimax(child, current_depth - 1, False)
+                    print(f"Gājiens {idx}: Stāvoklis {child['state']}, Score {child['score']}, Vērtība {move_value}")
+                    if move_value < best_value:
+                        best_value = move_value
+                        best_move = idx
+                        best_child = child
+            # Ja dators sāk, tad dators spēlē kā maksimizētājs.
+            else:
+                best_value = float("-inf")
+                for idx, child in enumerate(self.tree["children"]):
+                    # Nākamajā kārtā dators spēlē kā maksimizētājs (parametr True)
+                    move_value = self.minimax(child, current_depth - 1, True)
+                    print(f"Gājiens {idx}: Stāvoklis {child['state']}, Score {child['score']}, Vērtība {move_value}")
+                    if move_value > best_value:
+                        best_value = move_value
+                        best_move = idx
+                        best_child = child
+        elif self.isAlfaBeta:
+            if self.is_maximizing:
+                best_value = float("inf")
+                for idx, child in enumerate(self.tree["children"]):
+                    move_value = self.alfa_beta(child, current_depth - 1, float("-inf"), float("inf"), False)
+                    print(f"Gājiens {idx}: Stāvoklis {child['state']}, Score {child['score']}, Vērtība {move_value}")
+                    if move_value < best_value:
+                        best_value = move_value
+                        best_move = idx
+                        best_child = child
+            else:
+                best_value = float("-inf")
+                for idx, child in enumerate(self.tree["children"]):
+                    move_value = self.alfa_beta(child, current_depth - 1, float("-inf"), float("inf"), True)
+                    print(f"Gājiens {idx}: Stāvoklis {child['state']}, Score {child['score']}, Vērtība {move_value}")
+                    if move_value > best_value:
+                        best_value = move_value
+                        best_move = idx
+                        best_child = child
+
 
         if best_child is not None:
             # Atjaunina spēles stāvokli pēc datora gājiena
@@ -260,7 +367,7 @@ class Game():
     def computer_move(self):
         # Ja lietotājs sāk spēli (self.is_maximizing ir True), tad datora loma ir minimizējoša.
         # Tāpēc izsaucam choose_move ar is_max_turn = False.
-        self.choose_move(is_max_turn=not self.is_maximizing)
+        self.choose_move()
 
     def get_dynamic_depth(self):
         """
