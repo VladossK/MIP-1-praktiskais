@@ -8,7 +8,7 @@ class Game():
         self.game_state = []         # Pašreizējais spēles stāvoklis (skaitļu saraksts)
         self.choose_num = 0
 
-        self.isMinMax = True         # Karogs: izmantot minimax algoritmu
+        self.isMinMax = False         # Karogs: izmantot minimax algoritmu
         self.isAlfaBeta = False      # Karogs: izmantot alfa_beta algoritmu
         self.is_maximizing = True    # Spēlētājs, kurš sācis spēli, tiek uzskatīts par maksimizējošo
 
@@ -58,6 +58,27 @@ class Game():
             print("Dators sāks spēli.")
 
         return choice
+
+    def set_algorithm(self, choice):
+        """
+        Iestata algoritmu, kuru izmantot, atkarībā no parametra choice.
+
+        Parametri:
+            choice (str): "1" – Minimax algoritms, "2" – Alfa-beta algoritms.
+
+        Iestata atbilstošos karogus: self.isMinMax un self.isAlfaBeta.
+        """
+        if choice == 1:
+            self.isMinMax = True
+            self.isAlfaBeta = False
+            print("Izvēlēts Minimax algoritms.")
+        elif choice == 2:
+            self.isMinMax = False
+            self.isAlfaBeta = True
+            print("Izvēlēts Alfa-beta algoritms.")
+        else:
+            print("Nepareiza izvēle. Lūdzu, izvēlies \"1\" vai \"2\".")
+
 
     # Ģenerē nejaušu skaitļu sarakstu
     def generate_numbers(self, length):
@@ -385,6 +406,30 @@ class Game():
         else:
             self.depth = 3
         return self.depth
+
+    def reset_game(self):
+        """
+        Atiestata visus spēles rādītājus un piedāvā sākt jaunu spēli.
+        Šī funkcija:
+          - Notīra pašreizējo spēles stāvokli (game_state),
+          - Atiestata spēlētāja un bankas punktus uz 0,
+          - Notīra lēmumu koku (tree) un līmeņus (levels),
+          - Piedāvā lietotājam izvēlēties, vai sākt jaunu spēli.
+
+        Atgriež:
+          True, ja lietotājs izvēlas sākt jaunu spēli, pretējā gadījumā False.
+        """
+        self.game_state = []
+        self.player_score = 0
+        self.bank_score = 0
+        self.tree = None
+        self.levels = {}
+
+        restart = input("Vai vēlaties sākt jaunu spēli? (jā/nē): ")
+        if restart.lower() in ["jā", "ja", "y", "yes"]:
+            return True
+        else:
+            return False
 
 
 
