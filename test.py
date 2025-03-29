@@ -3,14 +3,14 @@ from Logic import Game
 game = Game()
 game.choose_length(15)
 game.set_algorithm(2)
+game.current_turn = "computer"
+game.max_player = "computer"
+
 
 while True:
     initial_numbers = game.generate_numbers(game.length)
     print("Sākotnējais stāvoklis:", initial_numbers)
     game.game_state = initial_numbers.copy()
-    first = game.choose_first_move()
-
-    game.current_turn = "player" if first == 1 else "computer"
 
     while len(game.game_state) > 1:
         if game.current_turn == "player":
