@@ -272,12 +272,14 @@ class Game():
             self.game_state = best_child["state"]
             self.player_score = best_child["score"]["player_score"]
             self.bank_score = best_child["score"]["bank_score"]
-            print(f"\n💡 Labākais gājiens: {best_move} (vērtība: {best_value})")
-            print(f"➡️ Stāvoklis pēc gājiena: {self.game_state}")
-            print(f"🎯 Spēlētāja punkti: {self.player_score}, Banka: {self.bank_score}\n")
+            #FOR GUI
+            self.last_computer_move = f"Dators izveleja gājenu {best_move}: stavoklis {self.game_state} (оценка: {best_value})"
+            print(f"\nLabākais gājiens: {best_move} (vērtība: {best_value})")
+            print(f"Stāvoklis pēc gājiena: {self.game_state}")
+            print(f"Spēlētāja punkti: {self.player_score}, Banka: {self.bank_score}\n")
             return best_child
         else:
-            print("❌ Nav pieejamu gājienu.")
+            print("Nav pieejamu gājienu.")
             return None
 
 
@@ -360,7 +362,7 @@ class Game():
 
 
     # GRUTI REALIZET GUI (DELETE NAKOTNE)
-    def reset_game(self):
+    def reset_game(self, restart=True):
         """
         Atiestata visus spēles rādītājus un piedāvā sākt jaunu spēli.
         Šī funkcija:
@@ -377,12 +379,7 @@ class Game():
         self.bank_score = 0
         self.tree = None
         self.levels = {}
-
-        restart = input("Vai vēlaties sākt jaunu spēli? (jā/nē): ")
-        if restart.lower() in ["jā", "ja", "y", "yes"]:
-            return True
-        else:
-            return False
+        return restart
 
 
 
