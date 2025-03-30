@@ -41,7 +41,7 @@ class GUI:
                     if started:
                         self.game.choose_length(self.menu.array_length)
                         # Выбор алгоритма: 1 - minimax, 2 - alfa-beta
-                        self.game.set_algorithm(1 if self.menu.algorithm_switch.state else 2)
+                        self.game.set_algorithm(2 if self.menu.algorithm_switch.state else 1)
                         self.game.generate_numbers(self.menu.array_length)
                         if self.menu.start_player_switch.state:
                             self.game.max_player = "player"
@@ -81,9 +81,22 @@ class GUI:
             self.end_screen.render()
         pygame.display.flip()
 
-if __name__ == "__main__":
-    gui = GUI()
-    gui.run()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

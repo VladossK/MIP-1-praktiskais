@@ -64,7 +64,7 @@ class MainMenu:
                                           self.minus_button.y + (
                                                       self.minus_button.height - length_surface.get_height()) // 2))
         # Отрисовка переключателей
-        self.algorithm_switch.render(self.screen, "alpha-beta", "minimax", self.font)
+        self.algorithm_switch.render(self.screen, "Alfa-beta", "Minimax", self.font)
         self.start_player_switch.render(self.screen, "Spēlētājs", "Dators", self.font)
         # Кнопка "Sākt spēli"
         pygame.draw.rect(self.screen, (100, 100, 200), self.start_button)
@@ -146,17 +146,35 @@ class GameScreen:
             a = self.game.game_state[index - 1]
             b = self.game.game_state[index]
             s = a + b
-            new_val = 1 if s > 7 else 3 if s < 7 else 2
+            if s > 7:
+                new_val = 1
+                self.game.common_score += 1
+            elif s < 7:
+                new_val = 3
+                self.game.common_score -= 1
+            else:  # s == 7
+                new_val = 2
+                self.game.bank_score += 1
             self.game.game_state.pop(index)
             self.game.game_state[index - 1] = new_val
         elif direction == "right" and index < len(self.game.game_state) - 1:
             a = self.game.game_state[index]
             b = self.game.game_state[index + 1]
             s = a + b
-            new_val = 1 if s > 7 else 3 if s < 7 else 2
+            if s > 7:
+                new_val = 1
+                self.game.common_score += 1
+            elif s < 7:
+                new_val = 3
+                self.game.common_score -= 1
+            else:  # s == 7
+                new_val = 2
+                self.game.bank_score += 1
             self.game.game_state[index] = new_val
             self.game.game_state.pop(index + 1)
+
         print("Atjaunotais masīvs:", self.game.game_state)
+        print(f"Player Score: {self.game.common_score}, Bank Score: {self.game.bank_score}")
 
     def update(self):
         pass
@@ -164,13 +182,14 @@ class GameScreen:
     def render(self):
         self.screen.fill((50, 50, 50))
         # Virsraksts
-        title_surface = self.font.render("Spēles ekrāns", True, (255, 255, 255))
+        algorithm_name = "Minimax algoritms" if self.game.isMinMax else "Alfa-beta algoritms"
+        title_surface = self.font.render(algorithm_name, True, (255, 255, 255))
         self.screen.blit(title_surface, (self.width // 2 - title_surface.get_width() // 2, 50))
 
         # Attēlo, kurš gājiens (spēlētājs/dators)
-        turn_text = f"Gājiens: {'Spēlētājs' if self.game.current_turn == 'player' else 'Dators'}"
-        turn_surface = self.font.render(turn_text, True, (255, 255, 255))
-        self.screen.blit(turn_surface, (self.width // 2 - turn_surface.get_width() // 2, 10))
+        started_by = "Dators" if self.game.max_player == "computer" else "Spēlētājs"
+        started_surface = self.font.render(f"Sāka spēli: {started_by}", True, (255, 255, 255))
+        self.screen.blit(started_surface, (self.width // 2 - started_surface.get_width() // 2, 10))
 
         # Attēlo masīvu ar skaitļiem
         rects = self.get_number_rects()
@@ -208,11 +227,11 @@ class GameScreen:
 
         # Attēlo divus skaitītājus kreisajā apakšā (katrs atsevišķā rindā)
         margin = 20
-        player_score_surface = self.font.render(f"Spēlētājs: {self.game.player_score}", True, (200, 200, 200))
+        common_score_surface = self.font.render(f"Spēlētājs: {self.game.common_score}", True, (200, 200, 200))
         bank_score_surface = self.font.render(f"Banka: {self.game.bank_score}", True, (200, 200, 200))
-        y_player = self.height - player_score_surface.get_height() - bank_score_surface.get_height() - margin
+        y_player = self.height - common_score_surface.get_height() - bank_score_surface.get_height() - margin
         y_bank = self.height - bank_score_surface.get_height() - margin
-        self.screen.blit(player_score_surface, (margin, y_player))
+        self.screen.blit(common_score_surface, (margin, y_player))
         self.screen.blit(bank_score_surface, (margin, y_bank))
 
 
@@ -223,7 +242,7 @@ class EndScreen:
         self.height = height
         self.font = font
         self.game = game_logic
-        self.play_again_button = pygame.Rect(self.width // 2 - 100, 300, 200, 50)
+        self.play_again_button = pygame.Rect(self.width // 2 - 150, 300, 300, 60)
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -240,27 +259,40 @@ class EndScreen:
         end_surface = self.font.render("Spēle beigusies", True, (255, 255, 255))
         self.screen.blit(end_surface, (self.width // 2 - end_surface.get_width() // 2, 50))
 
-        # Определяем победителя с учётом трёх вариантов: "Dators", "Spēlētājs", "Draw"
+        # Определение победителя
         result = self.game.terminal_eval({
-            "player_score": self.game.player_score,
+            "common_score": self.game.common_score,
             "bank_score": self.game.bank_score
         })
+
         if result == 1:
             winner = "Spēlētājs" if self.game.max_player == "player" else "Dators"
         elif result == -1:
             winner = "Dators" if self.game.max_player == "player" else "Spēlētājs"
         else:
-            winner = "Draw"
+            winner = "Draudzība"
 
-        winner_surface = self.font.render("Uzvar: " + winner, True, (255, 255, 255))
+        winner_surface = self.font.render(f"Uzvar: {winner}", True, (255, 255, 255))
         self.screen.blit(winner_surface, (self.width // 2 - winner_surface.get_width() // 2, 150))
 
+        # Кнопка "Spēlēt vēlreiz"
         pygame.draw.rect(self.screen, (200, 100, 100), self.play_again_button)
         replay_surface = self.font.render("Spēlēt vēlreiz", True, (255, 255, 255))
         self.screen.blit(replay_surface,
                          (self.play_again_button.x + (self.play_again_button.width - replay_surface.get_width()) // 2,
                           self.play_again_button.y + (
                                       self.play_again_button.height - replay_surface.get_height()) // 2))
+
+        # Итоговые счётчики игры под кнопкой рестарта (каждый в отдельном ряду)
+        y_position = self.play_again_button.bottom + 30  # Отступ вниз от кнопки рестарта
+
+        common_score_surface = self.font.render(f"Kopējais rezultāts: {self.game.common_score}", True, (200, 200, 200))
+        bank_score_surface = self.font.render(f"Banka: {self.game.bank_score}", True, (200, 200, 200))
+
+        # Размещаем итоговые счётчики ниже кнопки и по центру
+        self.screen.blit(common_score_surface, (self.width // 2 - common_score_surface.get_width() // 2, y_position))
+        self.screen.blit(bank_score_surface, (
+        self.width // 2 - bank_score_surface.get_width() // 2, y_position + common_score_surface.get_height() + 15))
 
 
 class ToggleSwitch:
