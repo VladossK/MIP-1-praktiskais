@@ -14,8 +14,10 @@ class GUI:
         self.running = True
         self.font = pygame.font.SysFont(None, 48)
 
+        # Inicializē spēles loģiku
         self.game = Game()
 
+        # Inicializē galveno izvēlni, spēles ekrānu un beigu ekrānu
         self.menu = MainMenu(self.screen, self.width, self.height, self.font)
         self.game_screen = GameScreen(self.screen, self.width, self.height, self.font, self.game)
         self.end_screen = EndScreen(self.screen, self.width, self.height, self.font, self.game)
@@ -33,6 +35,7 @@ class GUI:
 
     def handle_events(self):
         for event in pygame.event.get():
+            # Ja saņemta QUIT ziņa, pārtrauc ciklu
             if event.type == pygame.QUIT:
                 self.running = False
             else:
@@ -40,7 +43,7 @@ class GUI:
                     started = self.menu.handle_event(event)
                     if started:
                         self.game.choose_length(self.menu.array_length)
-                        # Выбор алгоритма: 1 - minimax, 2 - alfa-beta
+                        # 1 - minimax, 2 - alfa-beta
                         self.game.set_algorithm(2 if self.menu.algorithm_switch.state else 1)
                         self.game.generate_numbers(self.menu.array_length)
                         if self.menu.start_player_switch.state:
@@ -62,11 +65,13 @@ class GUI:
         if self.state == "menu":
             self.menu.update()
         elif self.state == "game":
-            # Если текущий ход - "computer", выполняем его действие и переключаем ход на "player"
+            # Ja pašreizējais gājiens ir "computer" un masīvā ir vairāk par vienu elementu,
+            # izpilda datora gājienu un pārslēdz gājiens uz "player"
             if self.game.current_turn == "computer" and len(self.game.game_state) > 1:
-                self.game.computer_move()
+                self.game.choose_move()
                 self.game.current_turn = "player"
             self.game_screen.update()
+            # Ja masīvā paliek viens vai mazāk elementu, pāriet uz beigu ekrānu
             if len(self.game.game_state) <= 1:
                 self.state = "end"
         elif self.state == "end":
@@ -80,6 +85,7 @@ class GUI:
         elif self.state == "end":
             self.end_screen.render()
         pygame.display.flip()
+
 
 
 

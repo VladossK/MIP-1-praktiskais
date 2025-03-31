@@ -1,6 +1,4 @@
 import pygame
-from collections import defaultdict, deque
-
 
 class MainMenu:
     def __init__(self, screen, width, height, font):
@@ -9,18 +7,18 @@ class MainMenu:
         self.height = height
         self.font = font
 
-        # Кнопки для изменения длины массива
+        # Pogas masīva garuma mainīšanai
         self.minus_button = pygame.Rect(self.width // 2 - 150, 200, 50, 50)
         self.plus_button = pygame.Rect(self.width // 2 + 100, 200, 50, 50)
         self.array_length = 15
 
-        # Переключатель алгоритма: True = minimax, False = alfa-beta
+        # True = minimax, False = alfa-beta
         self.algorithm_switch = ToggleSwitch((self.width // 2 - 100, 270, 200, 50), initial_state=True)
 
-        # Переключатель того, кто начинает игру: True = Spēlētājs, False = Dators
+        #True = Spēlētājs, False = Dators
         self.start_player_switch = ToggleSwitch((self.width // 2 - 100, 340, 200, 50), initial_state=True)
 
-        # Кнопка "Sākt spēli"
+        # Poga "Start Game"
         self.start_button = pygame.Rect(self.width // 2 - 100, 500, 200, 50)
 
     def handle_event(self, event):
@@ -35,7 +33,7 @@ class MainMenu:
             elif self.start_player_switch.rect.collidepoint(pos):
                 self.start_player_switch.toggle()
             elif self.start_button.collidepoint(pos):
-                return True  # сигнал на запуск игры
+                return True  # Signāls spēles uzsākšanai
         return False
 
     def update(self):
@@ -46,7 +44,7 @@ class MainMenu:
         self.screen.fill((30, 30, 30))
         title_surface = self.font.render("Galvenā izvēlne", True, (255, 255, 255))
         self.screen.blit(title_surface, (self.width // 2 - title_surface.get_width() // 2, 50))
-        # Отрисовка изменения длины массива
+        # Masīva garuma maiņas attēlošana
         prompt_surface = self.font.render("Masīva garums:", True, (255, 255, 255))
         self.screen.blit(prompt_surface, (self.width // 2 - prompt_surface.get_width() // 2, 120))
         pygame.draw.rect(self.screen, (100, 100, 200), self.minus_button)
@@ -56,17 +54,17 @@ class MainMenu:
                           self.minus_button.y + (self.minus_button.height - minus_surface.get_height()) // 2))
         pygame.draw.rect(self.screen, (100, 100, 200), self.plus_button)
         plus_surface = self.font.render("+", True, (255, 255, 255))
-        self.screen.blit(plus_surface, (self.plus_button.x + (self.plus_button.width - plus_surface.get_width()) // 2,
-                                        self.plus_button.y + (
-                                                    self.plus_button.height - plus_surface.get_height()) // 2))
+        self.screen.blit(plus_surface,
+                         (self.plus_button.x + (self.plus_button.width - plus_surface.get_width()) // 2,
+                          self.plus_button.y + (self.plus_button.height - plus_surface.get_height()) // 2))
         length_surface = self.font.render(str(self.array_length), True, (255, 255, 255))
-        self.screen.blit(length_surface, (self.width // 2 - length_surface.get_width() // 2,
-                                          self.minus_button.y + (
-                                                      self.minus_button.height - length_surface.get_height()) // 2))
-        # Отрисовка переключателей
+        self.screen.blit(length_surface,
+                         (self.width // 2 - length_surface.get_width() // 2,
+                          self.minus_button.y + (self.minus_button.height - length_surface.get_height()) // 2))
+        # Slēdzēju attēlošana
         self.algorithm_switch.render(self.screen, "Alfa-beta", "Minimax", self.font)
         self.start_player_switch.render(self.screen, "Spēlētājs", "Dators", self.font)
-        # Кнопка "Sākt spēli"
+        # Poga "Sākt spēli"
         pygame.draw.rect(self.screen, (100, 100, 200), self.start_button)
         start_surface = self.font.render("Sākt spēli", True, (255, 255, 255))
         self.screen.blit(start_surface,
@@ -80,13 +78,13 @@ class GameScreen:
         self.width = width
         self.height = height
         self.font = font
-        self.game = game_logic  # Экземпляр Game из Logic.py
+        self.game = game_logic  # Game instance no Logic.py
 
-        # Для интерактивного перемещения чисел:
+        # Interaktīvai skaitļu pārvietošanai
         self.dragging_index = None
         self.drag_start_x = 0
         self.drag_dx = 0
-        self.drag_threshold = 30  # пиксели
+        self.drag_threshold = 30  # Pikseļi
 
     def get_number_rects(self):
         rects = []
@@ -97,9 +95,9 @@ class GameScreen:
             text_surface = self.font.render(str(num), True, (255, 255, 255))
             texts.append(text_surface)
             total_width += text_surface.get_width() + spacing
-        total_width -= spacing  # последний пробел не нужен
+        total_width -= spacing  # Pēdējā atstarpe nav vajadzīga
 
-        # Если требуемая ширина больше экрана, вычисляем коэффициент масштабирования
+        # Ja nepieciešamā platums pārsniedz ekrāna platumu, aprēķina mēroga koeficientu
         scale = 1.0
         if total_width > self.width:
             scale = self.width / total_width
@@ -108,7 +106,7 @@ class GameScreen:
         y = self.height // 2
         current_x = start_x
         for text_surface in texts:
-            # Используем оригинальную ширину для расчёта, но с учетом коэффициента масштабирования
+            # Izmanto oriģinālo platumu, bet ar mēroga koeficientu
             scaled_width = int(text_surface.get_width() * scale)
             rect = text_surface.get_rect(topleft=(current_x, y))
             rects.append(rect)
@@ -117,7 +115,7 @@ class GameScreen:
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:  # левая кнопка мыши
+            if event.button == 1:  # Kreisā peles poga
                 mouse_x, mouse_y = event.pos
                 rects = self.get_number_rects()
                 for idx, rect in enumerate(rects):
@@ -136,8 +134,8 @@ class GameScreen:
                     self.merge_pair(self.dragging_index, "left")
                 elif self.drag_dx > self.drag_threshold and self.dragging_index < len(self.game.game_state) - 1:
                     self.merge_pair(self.dragging_index, "right")
-                # После хода игрока вызывается ход компьютера
-                self.game.computer_move()
+                # Pēc spēlētāja gājiena izsauc datora gājienu
+                self.game.choose_move()
                 self.dragging_index = None
                 self.drag_dx = 0
 
@@ -174,7 +172,7 @@ class GameScreen:
             self.game.game_state.pop(index + 1)
 
         print("Atjaunotais masīvs:", self.game.game_state)
-        print(f"Player Score: {self.game.common_score}, Bank Score: {self.game.bank_score}")
+        print(f"Spēlētāja rezultāts: {self.game.common_score}, Banka: {self.game.bank_score}")
 
     def update(self):
         pass
@@ -186,40 +184,39 @@ class GameScreen:
         title_surface = self.font.render(algorithm_name, True, (255, 255, 255))
         self.screen.blit(title_surface, (self.width // 2 - title_surface.get_width() // 2, 50))
 
-        # Attēlo, kurš gājiens (spēlētājs/dators)
+        # Parāda, kurš gājiens (spēlētājs/dators)
         started_by = "Dators" if self.game.max_player == "computer" else "Spēlētājs"
         started_surface = self.font.render(f"Sāka spēli: {started_by}", True, (255, 255, 255))
         self.screen.blit(started_surface, (self.width // 2 - started_surface.get_width() // 2, 10))
 
-        # Attēlo masīvu ar skaitļiem
+        # Masīva skaitļu attēlošana
         rects = self.get_number_rects()
         for idx, rect in enumerate(rects):
             text_surface = self.font.render(str(self.game.game_state[idx]), True, (255, 255, 255))
-            # Ja šis elements pieder pie apstrādājamās pāra (highlight), zīmē apmali
+            # Ja šis elements pieder apstrādājamajam pārim (izcelts), uzzīmē apmali
             if (hasattr(self.game, "highlight_pair_index") and
                     self.game.highlight_pair_index is not None and
                     (idx == self.game.highlight_pair_index or idx == self.game.highlight_pair_index + 1)):
-                # Zīmē sarkanu apmali ap elementu
                 pygame.draw.rect(self.screen, (255, 0, 0), rect.inflate(10, 10), 2)
-            # Zīmē skaitļa tekstu
+            # Attēlo skaitļa tekstu
             if idx == self.dragging_index:
                 moved_rect = rect.move(self.drag_dx, 0)
                 self.screen.blit(text_surface, moved_rect)
             else:
                 self.screen.blit(text_surface, rect)
 
-        # Atrast masīva apakšējo robežu, lai komentārs tiktu novietots zem tā
+        # Atrodam masīva apakšējo robežu, lai komentārs tiktu novietots zem tā
         if rects:
             array_bottom = max(rect.bottom for rect in rects)
         else:
             array_bottom = self.height // 2
 
-        # Attēlo datora gājiņa komentāru zem masīva
+        # Parāda datora gājiņa komentāru zem masīva
         if hasattr(self.game, "last_computer_move") and self.game.last_computer_move:
             import textwrap
             comment = self.game.last_computer_move
             wrapped_lines = textwrap.wrap(comment, width=40)  # pielāgo platumu pēc vajadzības
-            y_comment = array_bottom + 20  # atstarpe zem masīva
+            y_comment = array_bottom + 20  # Atstarpe zem masīva
             for line in wrapped_lines:
                 comment_surface = self.font.render(line, True, (255, 255, 0))
                 self.screen.blit(comment_surface, (self.width // 2 - comment_surface.get_width() // 2, y_comment))
@@ -259,7 +256,7 @@ class EndScreen:
         end_surface = self.font.render("Spēle beigusies", True, (255, 255, 255))
         self.screen.blit(end_surface, (self.width // 2 - end_surface.get_width() // 2, 50))
 
-        # Определение победителя
+        # Uzvarētāja noteikšana
         result = self.game.terminal_eval({
             "common_score": self.game.common_score,
             "bank_score": self.game.bank_score
@@ -275,24 +272,23 @@ class EndScreen:
         winner_surface = self.font.render(f"Uzvar: {winner}", True, (255, 255, 255))
         self.screen.blit(winner_surface, (self.width // 2 - winner_surface.get_width() // 2, 150))
 
-        # Кнопка "Spēlēt vēlreiz"
+        # Poga "Spēlēt vēlreiz"
         pygame.draw.rect(self.screen, (200, 100, 100), self.play_again_button)
         replay_surface = self.font.render("Spēlēt vēlreiz", True, (255, 255, 255))
         self.screen.blit(replay_surface,
                          (self.play_again_button.x + (self.play_again_button.width - replay_surface.get_width()) // 2,
-                          self.play_again_button.y + (
-                                      self.play_again_button.height - replay_surface.get_height()) // 2))
+                          self.play_again_button.y + (self.play_again_button.height - replay_surface.get_height()) // 2))
 
-        # Итоговые счётчики игры под кнопкой рестарта (каждый в отдельном ряду)
-        y_position = self.play_again_button.bottom + 30  # Отступ вниз от кнопки рестарта
+        # Spēles gala rezultātu skaitītāji zem restart pogas (katrs atsevišķā rindā)
+        y_position = self.play_again_button.bottom + 30  # Atstarpe zem restart pogas
 
         common_score_surface = self.font.render(f"Kopējais rezultāts: {self.game.common_score}", True, (200, 200, 200))
         bank_score_surface = self.font.render(f"Banka: {self.game.bank_score}", True, (200, 200, 200))
 
-        # Размещаем итоговые счётчики ниже кнопки и по центру
+        # Novieto gala rezultātu skaitītājus zem pogas un centrē tos
         self.screen.blit(common_score_surface, (self.width // 2 - common_score_surface.get_width() // 2, y_position))
         self.screen.blit(bank_score_surface, (
-        self.width // 2 - bank_score_surface.get_width() // 2, y_position + common_score_surface.get_height() + 15))
+            self.width // 2 - bank_score_surface.get_width() // 2, y_position + common_score_surface.get_height() + 15))
 
 
 class ToggleSwitch:
@@ -331,7 +327,5 @@ class ToggleSwitch:
         pygame.draw.rect(screen, (200, 200, 200), knob_rect, border_radius=20)
         left_surface = font.render(left_label, True, (255, 255, 255))
         right_surface = font.render(right_label, True, (255, 255, 255))
-        screen.blit(left_surface, (self.rect.x - left_surface.get_width() - 10,
-                                   self.rect.y + (self.rect.height - left_surface.get_height()) // 2))
-        screen.blit(right_surface, (self.rect.right + 10,
-                                    self.rect.y + (self.rect.height - right_surface.get_height()) // 2))
+        screen.blit(left_surface, (self.rect.x - left_surface.get_width() - 10, self.rect.y + (self.rect.height - left_surface.get_height()) // 2))
+        screen.blit(right_surface, (self.rect.right + 10,self.rect.y + (self.rect.height - right_surface.get_height()) // 2))
