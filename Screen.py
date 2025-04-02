@@ -79,43 +79,41 @@ class GameScreen:
         self.height = height
         self.font = font
         self.game = game_logic  # Game instance no Logic.py
-
-        # Interaktīvai skaitļu pārvietošanai
         self.dragging_index = None
         self.drag_start_x = 0
         self.drag_dx = 0
         self.drag_threshold = 30  # Pikseļi
+        self.current_state_y = self.height // 2 + 150  # HERE
 
-    def get_number_rects(self):
-        rects = []
+    def get_number_rects(self, state=None, base_y=None):  # HERE
+        if state is None:
+            state = self.game.game_state  # HERE
         spacing = 20
         texts = []
         total_width = 0
-        for num in self.game.game_state:
+        for num in state:
             text_surface = self.font.render(str(num), True, (255, 255, 255))
             texts.append(text_surface)
             total_width += text_surface.get_width() + spacing
-        total_width -= spacing  # Pēdējā atstarpe nav vajadzīga
-
-        # Ja nepieciešamā platums pārsniedz ekrāna platumu, aprēķina mēroga koeficientu
+        total_width -= spacing
         scale = 1.0
         if total_width > self.width:
             scale = self.width / total_width
-
         start_x = int((self.width - total_width * scale) // 2)
-        y = self.height // 2
+        if base_y is None:
+            base_y = self.current_state_y  # HERE
         current_x = start_x
+        rects = []
         for text_surface in texts:
-            # Izmanto oriģinālo platumu, bet ar mēroga koeficientu
             scaled_width = int(text_surface.get_width() * scale)
-            rect = text_surface.get_rect(topleft=(current_x, y))
+            rect = text_surface.get_rect(topleft=(current_x, base_y))
             rects.append(rect)
             current_x += scaled_width + int(spacing * scale)
         return rects
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:  # Kreisā peles poga
+            if event.button == 1:
                 mouse_x, mouse_y = event.pos
                 rects = self.get_number_rects()
                 for idx, rect in enumerate(rects):
@@ -134,7 +132,6 @@ class GameScreen:
                     self.merge_pair(self.dragging_index, "left")
                 elif self.drag_dx > self.drag_threshold and self.dragging_index < len(self.game.game_state) - 1:
                     self.merge_pair(self.dragging_index, "right")
-                # Pēc spēlētāja gājiena izsauc datora gājienu
                 self.game.choose_move()
                 self.dragging_index = None
                 self.drag_dx = 0
@@ -150,7 +147,7 @@ class GameScreen:
             elif s < 7:
                 new_val = 3
                 self.game.common_score -= 1
-            else:  # s == 7
+            else:
                 new_val = 2
                 self.game.bank_score += 1
             self.game.game_state.pop(index)
@@ -165,12 +162,11 @@ class GameScreen:
             elif s < 7:
                 new_val = 3
                 self.game.common_score -= 1
-            else:  # s == 7
+            else:
                 new_val = 2
                 self.game.bank_score += 1
             self.game.game_state[index] = new_val
             self.game.game_state.pop(index + 1)
-
         print("Atjaunotais masīvs:", self.game.game_state)
         print(f"Spēlētāja rezultāts: {self.game.common_score}, Banka: {self.game.bank_score}")
 
@@ -179,51 +175,46 @@ class GameScreen:
 
     def render(self):
         self.screen.fill((50, 50, 50))
-        # Virsraksts
         algorithm_name = "Minimax algoritms" if self.game.isMinMax else "Alfa-beta algoritms"
         title_surface = self.font.render(algorithm_name, True, (255, 255, 255))
         self.screen.blit(title_surface, (self.width // 2 - title_surface.get_width() // 2, 50))
 
-        # Parāda, kurš gājiens (spēlētājs/dators)
-        started_by = "Dators" if self.game.max_player == "computer" else "Spēlētājs"
-        started_surface = self.font.render(f"Sāka spēli: {started_by}", True, (255, 255, 255))
-        self.screen.blit(started_surface, (self.width // 2 - started_surface.get_width() // 2, 10))
+        if hasattr(self.game, "prev_state") and self.game.prev_state:
+            prev_rects = self.get_number_rects(state=self.game.prev_state,
+                                               base_y=title_surface.get_height() + 70)  # HERE
+            for idx, rect in enumerate(prev_rects):
+                text_surface = self.font.render(str(self.game.prev_state[idx]), True, (255, 255, 255))
+                if (self.game.highlight_pair_index is not None and
+                        (idx == self.game.highlight_pair_index or idx == self.game.highlight_pair_index + 1)):  # HERE
+                    pygame.draw.rect(self.screen, (255, 0, 0), rect.inflate(10, 10), 2)  # HERE
+                self.screen.blit(text_surface, rect)
 
-        # Masīva skaitļu attēlošana
         rects = self.get_number_rects()
         for idx, rect in enumerate(rects):
             text_surface = self.font.render(str(self.game.game_state[idx]), True, (255, 255, 255))
-            # Ja šis elements pieder apstrādājamajam pārim (izcelts), uzzīmē apmali
-            if (hasattr(self.game, "highlight_pair_index") and
-                    self.game.highlight_pair_index is not None and
-                    (idx == self.game.highlight_pair_index or idx == self.game.highlight_pair_index + 1)):
-                pygame.draw.rect(self.screen, (255, 0, 0), rect.inflate(10, 10), 2)
-            # Attēlo skaitļa tekstu
             if idx == self.dragging_index:
                 moved_rect = rect.move(self.drag_dx, 0)
                 self.screen.blit(text_surface, moved_rect)
             else:
                 self.screen.blit(text_surface, rect)
 
-        # Atrodam masīva apakšējo robežu, lai komentārs tiktu novietots zem tā
-        if rects:
-            array_bottom = max(rect.bottom for rect in rects)
-        else:
-            array_bottom = self.height // 2
-
-        # Parāda datora gājiņa komentāru zem masīva
+        # Отрисовка жёлтого лог-текста по центру экрана #HERE
         if hasattr(self.game, "last_computer_move") and self.game.last_computer_move:
             import textwrap
             comment = self.game.last_computer_move
-            wrapped_lines = textwrap.wrap(comment, width=40)  # pielāgo platumu pēc vajadzības
-            y_comment = array_bottom + 20  # Atstarpe zem masīva
+            wrapped_lines = textwrap.wrap(comment, width=40)
+            y_comment = self.height // 2  # HERE: Центр экрана по вертикали
             for line in wrapped_lines:
                 comment_surface = self.font.render(line, True, (255, 255, 0))
                 self.screen.blit(comment_surface, (self.width // 2 - comment_surface.get_width() // 2, y_comment))
                 y_comment += comment_surface.get_height() + 5
 
-        # Attēlo divus skaitītājus kreisajā apakšā (katrs atsevišķā rindā)
+        started_by = "Dators" if self.game.max_player == "computer" else "Spēlētājs"
+        start_surface = self.font.render(f"Sāka spēli: {started_by}", True, (255, 255, 255))
         margin = 20
+        self.screen.blit(start_surface, (
+        self.width // 2 - start_surface.get_width() // 2, self.height - start_surface.get_height() - margin))
+
         common_score_surface = self.font.render(f"Spēlētājs: {self.game.common_score}", True, (200, 200, 200))
         bank_score_surface = self.font.render(f"Banka: {self.game.bank_score}", True, (200, 200, 200))
         y_player = self.height - common_score_surface.get_height() - bank_score_surface.get_height() - margin
